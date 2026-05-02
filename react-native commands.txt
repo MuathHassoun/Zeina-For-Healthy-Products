@@ -1,0 +1,9 @@
+export ANDROID_HOME=/home/muath-hassoun/Android/Sdk
+export ANDROID_SDK_ROOT=/home/muath-hassoun/Android/Sdk
+export PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator"
+
+source ~/.bashrc
+adb devices
+
+npx react-native run-android --device R5CT51RWB7W
+echo "sdk.dir=/home/muath-hassoun/Android/Sdk" > android/local.properties

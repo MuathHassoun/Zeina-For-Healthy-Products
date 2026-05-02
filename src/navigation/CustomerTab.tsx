@@ -10,7 +10,7 @@ const Tab = createBottomTabNavigator();
 
 const icon = (emoji: string) => () => <Text style={{ fontSize: 20 }}>{emoji}</Text>;
 
-export const MainTab = () => {
+export const CustomerTab = () => {
   const { isGuest } = useAuthStore();
 
   return (
@@ -22,14 +22,10 @@ export const MainTab = () => {
       }}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarIcon: icon('🏠') }} />
-      <Tab.Screen
-        name="Cart"
-        component={CartScreen}
-        options={{
-          tabBarIcon: icon('🛒'),
-          tabBarLabel: isGuest ? 'Cart (Guest)' : 'Cart',
-        }}
-      />
+      <Tab.Screen name="Cart" component={CartScreen} options={{
+        tabBarIcon: icon('🛒'),
+        tabBarLabel: isGuest ? 'Cart (Guest)' : 'Cart',
+      }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarIcon: icon('👤') }} />
     </Tab.Navigator>
   );
