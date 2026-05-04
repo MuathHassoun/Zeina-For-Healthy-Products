@@ -1,0 +1,25 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "src/assets/fonts/Calistoga-Regular.ttf",
+      "sha1": "5c3a9fcbcd1b3442a1e61da58c16bcd9ed5560ad"
+    },
+    {
+      "path": "src/assets/fonts/Fustat-ExtraBold.ttf",
+      "sha1": "f4b71d0ed34f8413a83c2b9b3b9c80ea62229c41"
+    },
+    {
+      "path": "src/assets/fonts/Gantari-Regular.ttf",
+      "sha1": "3fc6cce1e23f4a6fee7f9ff2c86d05f8ede836ce"
+    },
+    {
+      "path": "src/assets/fonts/Inter-Medium.ttf",
+      "sha1": "ee5c2e22ffeddefc433c9aa4c76779bb73a5c682"
+    },
+    {
+      "path": "src/assets/fonts/Inter-Regular.ttf",
+      "sha1": "ee5c2e22ffeddefc433c9aa4c76779bb73a5c682"
+    }
+  ]
+}
