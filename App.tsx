@@ -1,21 +1,25 @@
 import React from 'react';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
-import LoginScreen from './src/screens/auth/LoginScreen';
-import Signup from './src/screens/auth/RegisterScreen';
-
-import HomeScreen from './src/screens/main/HomeScreen'; 
-import Cart from './src/screens/main/CartScreen';
-import CheckoutScreen from './src/screens/main/CheckoutScreen';
-import FavouritesScreen from './src/screens/main/FavouritesScreen';
-import ProductDetailScreen from './src/screens/main/ProductDetailScreen';
-import OrderConfirmationScreen from './src/screens/main/OrderConfirmationScreen';
-import SideMenuScreen from './src/screens/main/SideMenuScreen';
-// import ProductDetailsScreen from './src/screens/main/ProductDetailsScreen';
+import {NavigationContainer} from '@react-navigation/native';
+import {AuthStack} from './src/navigation/AuthStack';
+import {useAuthStore} from './src/store/useAuthStore';
+import HomeScreen from './src/screens/main/HomeScreen';
+import AdminDashboardScreen from './src/screens/admin/AdminDashboardScreen';
 
 export default function App() {
+  const {user, role} = useAuthStore();
+
+  const renderApp = () => {
+    if (!user) return <AuthStack />;
+    if (role === 'admin') return <AdminDashboardScreen />;
+    return <HomeScreen />;
+  };
+
   return (
     <SafeAreaProvider>
-      <SideMenuScreen />
+      <NavigationContainer>
+        {renderApp()}
+      </NavigationContainer>
     </SafeAreaProvider>
   );
 }

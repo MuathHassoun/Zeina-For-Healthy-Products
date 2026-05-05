@@ -1,5 +1,11 @@
+
+
+
+
 import React, {useState} from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -11,17 +17,56 @@ import {
   View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-
-// TODO: Add custom fonts to the project (android/app/src/main/assets/fonts + iOS Info.plist):
-//   - Fustat-ExtraBold
-//   - Gantari-Regular
-//   - Calistoga-Regular
-//   - Inter-Medium, Inter-Regular
+import {useNavigation} from '@react-navigation/native';
+import {useAuthStore} from '../../store/useAuthStore';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+
+  const {signIn, isLoading} = useAuthStore();
+  const navigation = useNavigation();
+
+  
+// const handleLogin = async () => {
+//     setError('');
+//     if (!email.trim() || !password.trim()) {
+//       setError('يرجى تعبئة جميع الحقول');
+//       return;
+//     }
+//     try {
+//       await signIn(email.trim(), password);
+//     } catch (err: any) {
+//       setError(err.message || 'فشل تسجيل الدخول');
+//     }
+//   };
+
+const handleLogin = async () => {
+    setError('');
+    if (!email.trim() || !password.trim()) {
+      setError('يرجى تعبئة جميع الحقول');
+      return;
+    }
+    try {
+      await signIn(email.trim(), password);
+      const state = useAuthStore.getState();
+      Alert.alert('نتيجة', 
+        'الدور: ' + state.role + 
+        '\nالايميل: ' + state.user?.email +
+        '\nالاسم: ' + state.user?.full_name +
+        '\nID: ' + state.user?.id
+      );
+    } catch (err: any) {
+      setError(err.message || 'فشل تسجيل الدخول');
+    }
+  };
+
+
+
+
+
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
@@ -48,6 +93,9 @@ export default function LoginScreen() {
           {/* ── Form ── */}
           <View style={styles.form}>
 
+            {/* Error message */}
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
             {/* Email input */}
             <View style={styles.inputWrapper}>
               <TextInput
@@ -65,12 +113,10 @@ export default function LoginScreen() {
 
             {/* Password input */}
             <View style={[styles.inputWrapper, styles.inputRow]}>
-              {/* Eye icon — left side (RTL: visually right-to-left so icon is on left) */}
               <Pressable
                 style={styles.eyeButton}
                 onPress={() => setShowPassword(prev => !prev)}
                 hitSlop={8}>
-                {/* TODO: Replace with an actual eye icon asset */}
                 <View style={styles.eyeIconPlaceholder} />
               </Pressable>
 
@@ -91,11 +137,18 @@ export default function LoginScreen() {
 
             {/* Login button */}
             <Pressable
+              onPress={handleLogin}
+              disabled={isLoading}
               style={({pressed}) => [
                 styles.loginButton,
                 pressed && styles.loginButtonPressed,
+                isLoading && styles.loginButtonDisabled,
               ]}>
-              <Text style={styles.loginButtonText}>تسجيل الدخول</Text>
+              {isLoading ? (
+                <ActivityIndicator color="#FFF" />
+              ) : (
+                <Text style={styles.loginButtonText}>تسجيل الدخول</Text>
+              )}
             </Pressable>
 
             {/* "أو" separator */}
@@ -107,6 +160,7 @@ export default function LoginScreen() {
 
             {/* Create account button */}
             <Pressable
+              onPress={() => navigation.navigate('Register' as never)}
               style={({pressed}) => [
                 styles.registerButton,
                 pressed && styles.registerButtonPressed,
@@ -121,11 +175,11 @@ export default function LoginScreen() {
   );
 }
 
-const BRAND_BROWN = '#4A3321';      // rgb(74, 51, 33)  — headings
-const BUTTON_BROWN = '#503520';     // rgb(80, 53, 32)  — login button bg
-const REGISTER_TEXT = '#553B22';    // rgb(85, 59, 34)  — register button text
-const INPUT_BG = '#FFFCF9';         // rgb(255, 252, 249)
-const SCREEN_BG = '#F5EFE6';        // rgb(245, 239, 230)
+const BRAND_BROWN = '#4A3321';
+const BUTTON_BROWN = '#503520';
+const REGISTER_TEXT = '#553B22';
+const INPUT_BG = '#FFFCF9';
+const SCREEN_BG = '#F5EFE6';
 const INPUT_BORDER = 'rgba(0,0,0,0.20)';
 
 const styles = StyleSheet.create({
@@ -141,9 +195,6 @@ const styles = StyleSheet.create({
     backgroundColor: SCREEN_BG,
     paddingBottom: 40,
   },
-
-  // Decorative corner element — matches Zeplin layer at top-right (123×110, opacity 0.20)
-  // TODO: Replace with <Image source={require('...')} /> once asset is available
   decorTopRight: {
     position: 'absolute',
     top: 0,
@@ -151,12 +202,9 @@ const styles = StyleSheet.create({
     width: 123,
     height: 110,
     opacity: 0.2,
-    // backgroundColor: 'transparent',
   },
-
-  // ── Header ──────────────────────────────────────────────────────────────────
   header: {
-    marginTop: 110,       // matches Zeplin y:110 for welcome title
+    marginTop: 110,
     paddingHorizontal: 36,
     alignItems: 'center',
   },
@@ -178,14 +226,18 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     writingDirection: 'rtl',
   },
-
-  // ── Form ────────────────────────────────────────────────────────────────────
   form: {
-    marginTop: 50,        // gap between subtitle and first input (~y:274 - subtitle bottom ~224)
+    marginTop: 50,
     paddingHorizontal: 36,
   },
-
-  // Shared input container (Frame 59 & Frame 60)
+  errorText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: '#D32F2F',
+    textAlign: 'center',
+    marginBottom: 16,
+    writingDirection: 'rtl',
+  },
   inputWrapper: {
     height: 60,
     backgroundColor: INPUT_BG,
@@ -215,14 +267,11 @@ const styles = StyleSheet.create({
   inputFlex: {
     paddingLeft: 0,
   },
-
-  // Eye icon for show/hide password
   eyeButton: {
     paddingHorizontal: 4,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // TODO: Replace this placeholder with an actual <Image> or SVG eye icon (28×18 from design)
   eyeIconPlaceholder: {
     width: 28,
     height: 18,
@@ -230,8 +279,6 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'rgba(0,0,0,0.49)',
   },
-
-  // Forgot password — right-aligned, Inter Medium 12px
   forgotPassword: {
     fontFamily: 'Inter-Medium',
     fontSize: 12,
@@ -240,10 +287,8 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     writingDirection: 'rtl',
     alignSelf: 'flex-end',
-    marginBottom: 40,      // gap to login button (~y:505 - forgotBottom ~465 = 40)
+    marginBottom: 40,
   },
-
-  // Login button (Frame 61)
   loginButton: {
     height: 60,
     backgroundColor: BUTTON_BROWN,
@@ -251,10 +296,13 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 34,     // gap to "أو" separator
+    marginBottom: 34,
   },
   loginButtonPressed: {
     opacity: 0.75,
+  },
+  loginButtonDisabled: {
+    opacity: 0.5,
   },
   loginButtonText: {
     fontFamily: 'Calistoga-Regular',
@@ -263,12 +311,10 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     textAlign: 'center',
   },
-
-  // "أو" separator
   separatorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 28,     // gap to register button
+    marginBottom: 28,
   },
   separatorLine: {
     flex: 1,
@@ -282,8 +328,6 @@ const styles = StyleSheet.create({
     color: '#000',
     marginHorizontal: 12,
   },
-
-  // Create account button (Frame 62)
   registerButton: {
     height: 60,
     backgroundColor: SCREEN_BG,

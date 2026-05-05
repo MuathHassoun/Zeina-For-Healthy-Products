@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,12 +13,8 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
-
-// TODO: FugazOne-Regular font is used in the subtitle but was not in the linked font set.
-//   Add FugazOne-Regular.ttf to src/assets/fonts/ and re-run: npx react-native-asset
-
-// TODO: Replace icon placeholder Views with actual SVG or vector-icons once assets are available.
-//   Design uses: user-line, mail-line, phone-line, git-repository-private-line (24×24 each)
+import {useNavigation} from '@react-navigation/native';
+import {useAuthStore} from '../../store/useAuthStore';
 
 export default function RegisterScreen() {
   const [fullName, setFullName] = useState('');
@@ -27,6 +24,31 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState('');
+
+  const {signUp, isLoading} = useAuthStore();
+  const navigation = useNavigation();
+
+  const handleRegister = async () => {
+    setError('');
+    if (!fullName.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
+      setError('يرجى تعبئة جميع الحقول');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('كلمة المرور غير متطابقة');
+      return;
+    }
+    if (password.length < 6) {
+      setError('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+      return;
+    }
+    try {
+      await signUp(email.trim(), password, fullName.trim());
+    } catch (err: any) {
+      setError(err.message || 'فشل إنشاء الحساب');
+    }
+  };
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
@@ -46,9 +68,11 @@ export default function RegisterScreen() {
             {/* ── Header ── */}
             <View style={styles.header}>
               <Text style={styles.title}>انشاء حساب جديد</Text>
-              {/* FugazOne fallback → Gantari-Regular until font is linked */}
               <Text style={styles.subtitle}>ابدأ رحلتك نحو حياة صحية</Text>
             </View>
+
+            {/* ── Error ── */}
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
             {/* ── Inputs ── */}
             <View style={styles.form}>
@@ -146,15 +170,22 @@ export default function RegisterScreen() {
             {/* ── Register button ── */}
             <View style={styles.actions}>
               <Pressable
+                onPress={handleRegister}
+                disabled={isLoading}
                 style={({pressed}) => [
                   styles.registerButton,
                   pressed && styles.registerButtonPressed,
+                  isLoading && styles.registerButtonDisabled,
                 ]}>
-                <Text style={styles.registerButtonText}>إنشاء حساب</Text>
+                {isLoading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <Text style={styles.registerButtonText}>إنشاء حساب</Text>
+                )}
               </Pressable>
 
               {/* Already have account */}
-              <Pressable>
+              <Pressable onPress={() => navigation.goBack()}>
                 <Text style={styles.loginLink}>لديك حساب؟ تسجيل الدخول</Text>
               </Pressable>
             </View>
@@ -167,8 +198,6 @@ export default function RegisterScreen() {
 }
 
 // ── Icon placeholder component ───────────────────────────────────────────────
-// Renders a simple geometric stand-in for each 24×24 icon type.
-// Replace each case with the real SVG/vector-icon once assets are available.
 type IconShape = 'user' | 'mail' | 'phone' | 'lock';
 
 function IconPlaceholder({shape}: {shape: IconShape}) {
@@ -197,9 +226,9 @@ function IconPlaceholder({shape}: {shape: IconShape}) {
 }
 
 // ── Colors ────────────────────────────────────────────────────────────────────
-const BRAND_BROWN = '#4A3321';   // rgb(74, 51, 33)  — title
-const BUTTON_BG   = '#614834';   // rgb(97, 72, 52)  — register button
-const INPUT_BG    = '#FFFCF9';   // rgb(255, 252, 249)
+const BRAND_BROWN = '#4A3321';
+const BUTTON_BG   = '#614834';
+const INPUT_BG    = '#FFFCF9';
 const ICON_COLOR  = 'rgba(0,0,0,0.61)';
 const INPUT_BORDER = 'rgba(0,0,0,0.20)';
 
@@ -207,7 +236,7 @@ const INPUT_BORDER = 'rgba(0,0,0,0.20)';
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#C7B09A', // matches gradient start so SafeAreaView edges blend
+    backgroundColor: '#C7B09A',
   },
   gradient: {
     flex: 1,
@@ -219,8 +248,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: 40,
   },
-
-  // ── Header
   header: {
     marginTop: 111,
     paddingHorizontal: 36,
@@ -235,7 +262,6 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
   },
   subtitle: {
-    // TODO: change to 'FugazOne-Regular' once font is linked
     fontFamily: 'Gantari-Regular',
     fontSize: 16,
     fontWeight: '400',
@@ -244,15 +270,20 @@ const styles = StyleSheet.create({
     marginTop: 4,
     writingDirection: 'rtl',
   },
-
-  // ── Form
-  form: {
-    marginTop: 40,           // gap: subtitle bottom (167+23=190) → first input (230) ≈ 40px
+  errorText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: '#D32F2F',
+    textAlign: 'center',
+    marginTop: 16,
     paddingHorizontal: 36,
-    gap: 21,                 // uniform gap between all inputs (matches Zeplin spacing)
+    writingDirection: 'rtl',
   },
-
-  // Shared input row
+  form: {
+    marginTop: 40,
+    paddingHorizontal: 36,
+    gap: 21,
+  },
   inputWrapper: {
     height: 60,
     flexDirection: 'row',
@@ -278,8 +309,6 @@ const styles = StyleSheet.create({
   inputFlex: {
     paddingLeft: 0,
   },
-
-  // Show/hide password toggle
   eyeButton: {
     paddingHorizontal: 4,
     justifyContent: 'center',
@@ -291,10 +320,8 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: ICON_COLOR,
   },
-
-  // ── Actions
   actions: {
-    marginTop: 66,           // gap: confirm password bottom (554+60=614) → button (680) = 66px
+    marginTop: 66,
     paddingHorizontal: 36,
     alignItems: 'center',
   },
@@ -309,6 +336,9 @@ const styles = StyleSheet.create({
   registerButtonPressed: {
     opacity: 0.75,
   },
+  registerButtonDisabled: {
+    opacity: 0.5,
+  },
   registerButtonText: {
     fontFamily: 'Inter-Medium',
     fontSize: 20,
@@ -316,15 +346,13 @@ const styles = StyleSheet.create({
     color: '#FFF',
     textAlign: 'center',
   },
-
-  // "لديك حساب؟ تسجيل الدخول"
   loginLink: {
     fontFamily: 'Inter-Medium',
     fontSize: 15,
     fontWeight: '500',
     color: 'rgba(0,0,0,0.50)',
     textAlign: 'center',
-    marginTop: 36,           // gap: button bottom (680+60=740) → link (776) = 36px
+    marginTop: 36,
     writingDirection: 'rtl',
   },
 });
@@ -339,7 +367,6 @@ const iconStyles = StyleSheet.create({
     opacity: 0.61,
     marginLeft: 4,
   },
-  // User: small circle head + wider body bar
   userHead: {
     width: 10,
     height: 10,
@@ -357,7 +384,6 @@ const iconStyles = StyleSheet.create({
     borderBottomWidth: 0,
     borderColor: ICON_COLOR,
   },
-  // Mail: simple rectangle envelope
   mailEnvelope: {
     width: 18,
     height: 14,
@@ -365,7 +391,6 @@ const iconStyles = StyleSheet.create({
     borderColor: ICON_COLOR,
     borderRadius: 2,
   },
-  // Phone: rounded rectangle
   phoneHandle: {
     width: 14,
     height: 18,
@@ -373,7 +398,6 @@ const iconStyles = StyleSheet.create({
     borderColor: ICON_COLOR,
     borderRadius: 3,
   },
-  // Lock: shackle arc + body
   lockShackle: {
     width: 10,
     height: 7,
